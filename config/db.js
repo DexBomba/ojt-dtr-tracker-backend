@@ -15,7 +15,7 @@ export const connectDB = async () => {
             database: process.env.DB_NAME || 'ojt_dtr_db',
             waitForConnections: true,
             connectionLimit: 10,
-            queueLimit: 0
+            queueLimit: 0,
             ssl: {
                 rejectUnauthorized: false
            }
