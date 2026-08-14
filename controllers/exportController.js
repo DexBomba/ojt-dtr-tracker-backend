@@ -143,6 +143,8 @@ export const exportPDF = async (req, res) => {
             return res.status(404).json({ message: 'No shifts to export' });
         }
 
+        shifts.sort((a, b) => new Date(a.date) - new Date(b.date));
+
         const users = await query(
             `SELECT name, email, full_name, school, department, company, position, supervisor, supervisor_title, target_hours
             FROM users WHERE id = ?`,
