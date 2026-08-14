@@ -133,7 +133,7 @@ export const exportExcel = async (req, res) => {
     }
 };
 
-// ===== EXPORT PDF =====
+// ===== EXPORT PDF (Print‑Friendly – No Colors, No Emoji) =====
 export const exportPDF = async (req, res) => {
     try {
         const shifts = req.body.shifts;
@@ -165,7 +165,7 @@ export const exportPDF = async (req, res) => {
         const maxDate = new Date(Math.max(...dates));
         const dateRange = `${minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} - ${maxDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
 
-        // Get current date for footer (server time)
+        // Get current date for footer
         const now = new Date();
         const currentDate = now.toLocaleDateString('en-US', { 
             year: 'numeric', 
@@ -173,207 +173,219 @@ export const exportPDF = async (req, res) => {
             day: 'numeric' 
         });
 
-        // Build HTML for PDF (Compact Version)
+        // Build HTML for PDF (Print‑Friendly)
         let html = `
             <!DOCTYPE html>
             <html>
             <head>
                 <meta charset="UTF-8">
-                <title>OJT DTR Report</title>
+                <title>Daily Time Tracker</title>
                 <style>
-                    /* Reset & Base */
+                    /* A4 Page Setup */
+                    @page {
+                        size: A4 portrait;
+                        margin: 10mm 12mm;
+                    }
+                    /* Reset & Base – Black and White Only */
                     * { margin: 0; padding: 0; box-sizing: border-box; }
                     body { 
                         font-family: 'Arial', 'Helvetica', sans-serif;
                         background: #fff;
-                        padding: 20px 30px;
-                        color: #2c3e50;
-                        line-height: 1.4;
-                        font-size: 12px;
+                        padding: 0;
+                        color: #000;
+                        font-size: 9px;
+                        line-height: 1.3;
                     }
-                    /* Container */
                     .report {
-                        max-width: 1000px;
+                        max-width: 100%;
                         margin: 0 auto;
                         background: #fff;
-                        padding: 15px 20px;
-                        border: 1px solid #ddd;
-                        box-shadow: 0 0 10px rgba(0,0,0,0.03);
+                        padding: 4px 0;
                     }
-                    /* Header */
+                    /* Header – No emoji, clean */
                     .header {
                         text-align: center;
-                        border-bottom: 2px solid #e67e22;
-                        padding-bottom: 10px;
-                        margin-bottom: 15px;
+                        border-bottom: 1.5px solid #000;
+                        padding-bottom: 6px;
+                        margin-bottom: 8px;
                     }
                     .header h1 {
-                        font-size: 22px;
-                        color: #2c3e50;
+                        font-size: 16px;
+                        color: #000;
                         margin: 0;
-                        letter-spacing: 0.5px;
+                        letter-spacing: 0.3px;
+                        font-weight: 700;
                     }
                     .header .sub {
-                        font-size: 13px;
-                        color: #7f8c8d;
-                        margin-top: 2px;
+                        font-size: 10px;
+                        color: #333;
                     }
                     .header .date-range {
-                        font-size: 12px;
-                        color: #7f8c8d;
-                        margin-top: 2px;
+                        font-size: 9px;
+                        color: #555;
                         font-style: italic;
                     }
-                    /* User Info Grid - Compact */
+                    /* User Info – 3 columns, compact */
                     .info-grid {
                         display: grid;
                         grid-template-columns: 1fr 1fr 1fr;
-                        gap: 4px 15px;
-                        background: #fdf6ec;
-                        padding: 10px 16px;
-                        border-radius: 6px;
-                        margin-bottom: 15px;
-                        border-left: 3px solid #e67e22;
-                        font-size: 11px;
+                        gap: 2px 12px;
+                        background: #f5f5f5;
+                        padding: 6px 12px;
+                        border-radius: 0px;
+                        margin-bottom: 8px;
+                        border-left: 2px solid #000;
+                        font-size: 8.5px;
                     }
                     .info-grid .item {
                         display: flex;
                     }
                     .info-grid .label {
                         font-weight: 700;
-                        color: #2c3e50;
-                        min-width: 80px;
+                        color: #000;
+                        min-width: 65px;
                     }
                     .info-grid .value {
-                        color: #34495e;
+                        color: #000;
                     }
-                    /* Table - Compact */
+                    /* Table – compact */
                     .table-wrap {
                         overflow-x: auto;
-                        margin-bottom: 15px;
+                        margin-bottom: 8px;
                     }
                     table {
                         width: 100%;
                         border-collapse: collapse;
-                        font-size: 11px;
-                        border-radius: 4px;
-                        overflow: hidden;
+                        font-size: 8px;
+                        border: 1px solid #000;
                     }
                     table thead {
-                        background: #2c3e50;
+                        background: #000;
                         color: #fff;
                     }
                     table th {
-                        padding: 6px 8px;
+                        padding: 4px 5px;
                         text-align: left;
                         font-weight: 600;
                         letter-spacing: 0.3px;
-                        font-size: 10px;
+                        font-size: 7.5px;
                         text-transform: uppercase;
+                        border: 1px solid #000;
                     }
                     table td {
-                        padding: 5px 8px;
-                        border-bottom: 1px solid #ecf0f1;
+                        padding: 3px 5px;
+                        border: 1px solid #000;
                     }
                     table tbody tr:nth-child(even) {
                         background: #f9f9f9;
                     }
-                    table tbody tr:hover {
-                        background: #fdf6ec;
-                    }
                     table .totals-row {
-                        background: #fdf6ec !important;
+                        background: #e8e8e8 !important;
                         font-weight: 700;
-                        border-top: 2px solid #e67e22;
+                        border-top: 1.5px solid #000;
                     }
                     table .totals-row td {
-                        padding-top: 8px;
-                        padding-bottom: 8px;
-                        font-size: 12px;
+                        padding-top: 4px;
+                        padding-bottom: 4px;
+                        font-size: 9px;
                     }
-                    /* Summary Box - Compact */
+                    /* Summary Box – no colors */
                     .summary-box {
                         display: flex;
                         justify-content: space-around;
-                        background: #fdf6ec;
-                        padding: 10px 16px;
-                        border-radius: 6px;
-                        margin: 12px 0 20px;
-                        border: 1px solid #e8d5c4;
+                        background: #f5f5f5;
+                        padding: 6px 12px;
+                        border-radius: 0px;
+                        margin: 6px 0 12px;
+                        border: 1px solid #000;
                     }
                     .summary-box .stat {
                         text-align: center;
                     }
                     .summary-box .stat .number {
-                        font-size: 18px;
+                        font-size: 14px;
                         font-weight: 700;
-                        color: #e67e22;
+                        color: #000;
                     }
                     .summary-box .stat .label {
-                        font-size: 10px;
-                        color: #7f8c8d;
+                        font-size: 8px;
+                        color: #333;
                         text-transform: uppercase;
+                        letter-spacing: 0.2px;
+                    }
+                    /* Verification – centered */
+                    .verification {
+                        text-align: center;
+                        margin-top: 14px;
+                        padding-top: 10px;
+                        border-top: 1.5px dashed #000;
+                    }
+                    .verification .title {
+                        font-size: 10px;
+                        font-weight: 600;
+                        color: #000;
+                        letter-spacing: 0.5px;
+                        text-transform: uppercase;
+                    }
+                    .verification .supervisor-name {
+                        font-size: 13px;
+                        font-weight: 700;
+                        color: #000;
+                        margin-top: 10px;
                         letter-spacing: 0.3px;
                     }
-                    /* Signature Section - Compact */
-                    .signature {
-                        display: flex;
-                        justify-content: space-between;
-                        margin-top: 25px;
-                        padding-top: 15px;
-                        border-top: 2px dashed #bdc3c7;
-                    }
-                    .signature .block {
-                        width: 45%;
-                    }
-                    .signature .block p {
-                        margin: 4px 0;
-                        font-size: 11px;
-                    }
-                    .signature .block .line {
-                        margin-top: 20px;
-                        border-bottom: 1px solid #2c3e50;
-                        width: 80%;
-                    }
-                    .signature .block .line-label {
+                    .verification .supervisor-title {
                         font-size: 10px;
-                        color: #7f8c8d;
-                        margin-top: 2px;
+                        color: #333;
+                        margin-top: 1px;
                     }
-                    /* Footer - Simple with Developer Name */
+                    .verification .signature-line {
+                        width: 50%;
+                        max-width: 300px;
+                        margin: 6px auto 0;
+                        border-bottom: 1px solid #000;
+                    }
+                    .verification .in-charge {
+                        font-size: 9px;
+                        color: #333;
+                        margin-top: 2px;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                    }
+                    /* Footer – compact */
                     .footer {
                         text-align: center;
-                        font-size: 10px;
-                        color: #95a5a6;
-                        margin-top: 20px;
-                        padding-top: 12px;
-                        border-top: 1px solid #ecf0f1;
-                        line-height: 1.6;
+                        font-size: 8px;
+                        color: #333;
+                        margin-top: 12px;
+                        padding-top: 8px;
+                        border-top: 1px solid #ccc;
+                        line-height: 1.5;
                     }
                     .footer .dev {
                         font-weight: 600;
-                        color: #e67e22;
+                        color: #000;
+                    }
+                    .footer .approved {
+                        font-weight: 600;
+                        color: #000;
                     }
                     /* Print-specific */
                     @media print {
-                        body { padding: 10px; }
+                        body { padding: 0; }
                         .report { border: none; box-shadow: none; }
                         table tbody tr:hover { background: #f9f9f9; }
-                        .signature { page-break-inside: avoid; }
+                        .verification { page-break-inside: avoid; }
                         .summary-box { page-break-inside: avoid; }
-                    }
-                    /* Page break control */
-                    .page-break {
-                        page-break-after: always;
                     }
                 </style>
             </head>
             <body>
                 <div class="report">
-                    <!-- Header -->
+                    <!-- Header – No Emoji -->
                     <div class="header">
-                        <h1>📄 OJT DTR Tracker</h1>
-                        <div class="sub">Daily Time Record</div>
+                        <h1>Daily Time Tracker</h1>
+                        <div class="sub">OJT DTR Report</div>
                         <div class="date-range">Period: ${dateRange}</div>
                     </div>
 
@@ -432,7 +444,7 @@ export const exportPDF = async (req, res) => {
         html += `
                             <tr class="totals-row">
                                 <td colspan="4" style="text-align:right;">Total Hours</td>
-                                <td style="text-align:right; font-size:14px;">${totalHours.toFixed(1)}</td>
+                                <td style="text-align:right; font-size:11px;">${totalHours.toFixed(1)}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -458,36 +470,22 @@ export const exportPDF = async (req, res) => {
                     </div>
                 </div>
 
-                <!-- Signature Section -->
-                <div class="signature">
-                    <div class="block">
-                        <p><strong>Intern</strong></p>
-                        <p>${fullName}</p>
-                        <div class="line"></div>
-                        <div class="line-label">Signature</div>
-                        <div style="margin-top:6px; font-size:10px; color:#7f8c8d;">Date: _______________</div>
-                    </div>
-                    <div class="block" style="text-align:right;">
-                        <p><strong>Supervisor</strong></p>
-                        <p>${user.supervisor || 'N/A'}</p>
-                        <div class="line" style="margin-left:auto;"></div>
-                        <div class="line-label">Signature</div>
-                        <div style="margin-top:6px; font-size:10px; color:#7f8c8d;">Date: _______________</div>
-                    </div>
+                <!-- Verification -->
+                <div class="verification">
+                    <div class="title">Verified as to the prescribed office hours:</div>
+                    <div class="supervisor-name">${user.supervisor || 'N/A'}</div>
+                    <div class="supervisor-title">${user.supervisor_title || 'N/A'}</div>
+                    <div class="signature-line"></div>
+                    <div class="in-charge">In Charge</div>
                 </div>
 
-                <!-- Footer - Simple with Developer Name -->
+                <!-- Footer -->
                 <div class="footer">
-                    <p>
-                        This is an official DTR generated from OJT DTR Tracker (Academic Project)<br>
-                        © 2026 OJT DTR Tracker — For Student Use &nbsp;·&nbsp; 
-                        <a href="#">Privacy Policy</a> &nbsp;·&nbsp; 
-                        <a href="#">Terms of Service</a>
-                    </p>
-                    <p style="margin-top:4px;">
-                        <span class="dev">Developed by John Dexter Obut</span> &nbsp;·&nbsp; 
-                        Report generated on ${currentDate}
-                    </p>
+                    <p>This is an official DTR generated from OJT DTR Tracker (Intern Project)</p>
+                    <p><span class="dev">Developed by John Dexter Obut - Intern</span></p>
+                    <p><span class="approved">Approved by Enrico Emil Dela Rosa - Software Engineer</span></p>
+                    <p style="font-size:7px; color:#777;">© 2026 OJT DTR Tracker (For Student Intern Use)</p>
+                    <p style="font-size:7px; color:#777;">Report generated on ${currentDate}</p>
                 </div>
             </div>
         </body>
@@ -495,7 +493,7 @@ export const exportPDF = async (req, res) => {
         `;
 
         res.setHeader('Content-Type', 'text/html');
-        res.setHeader('Content-Disposition', `attachment; filename=OJT_DTR_${new Date().toISOString().split('T')[0]}.html`);
+        res.setHeader('Content-Disposition', `attachment; filename=Daily_Time_Tracker_${new Date().toISOString().split('T')[0]}.html`);
         res.send(html);
 
     } catch (error) {
