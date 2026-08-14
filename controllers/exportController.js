@@ -202,7 +202,7 @@ export const exportPDF = async (req, res) => {
                         background: #fff;
                         padding: 4px 0;
                     }
-                    /* Header – No emoji, clean */
+                    /* Header */
                     .header {
                         text-align: center;
                         border-bottom: 1.5px solid #000;
@@ -225,7 +225,7 @@ export const exportPDF = async (req, res) => {
                         color: #555;
                         font-style: italic;
                     }
-                    /* User Info – 3 columns, compact */
+                    /* User Info */
                     .info-grid {
                         display: grid;
                         grid-template-columns: 1fr 1fr 1fr;
@@ -248,13 +248,14 @@ export const exportPDF = async (req, res) => {
                     .info-grid .value {
                         color: #000;
                     }
-                    /* Table – compact */
+                    /* Table - FIXED WIDTHS & PROFESSIONAL ALIGNMENTS */
                     .table-wrap {
                         overflow-x: auto;
                         margin-bottom: 8px;
                     }
                     table {
                         width: 100%;
+                        table-layout: fixed; /* Prevents columns from stretching too wide */
                         border-collapse: collapse;
                         font-size: 8px;
                         border: 1px solid #000;
@@ -264,8 +265,8 @@ export const exportPDF = async (req, res) => {
                         color: #fff;
                     }
                     table th {
-                        padding: 4px 5px;
-                        text-align: left;
+                        padding: 4px 3px;
+                        text-align: center; /* Professional header alignment */
                         font-weight: 600;
                         letter-spacing: 0.3px;
                         font-size: 7.5px;
@@ -273,7 +274,7 @@ export const exportPDF = async (req, res) => {
                         border: 1px solid #000;
                     }
                     table td {
-                        padding: 3px 5px;
+                        padding: 3px 4px;
                         border: 1px solid #000;
                     }
                     table tbody tr:nth-child(even) {
@@ -289,7 +290,7 @@ export const exportPDF = async (req, res) => {
                         padding-bottom: 4px;
                         font-size: 9px;
                     }
-                    /* Summary Box – no colors */
+                    /* Summary Box */
                     .summary-box {
                         display: flex;
                         justify-content: space-around;
@@ -313,7 +314,7 @@ export const exportPDF = async (req, res) => {
                         text-transform: uppercase;
                         letter-spacing: 0.2px;
                     }
-                    /* Verification – centered */
+                    /* Verification - Fixed Signature Spacing */
                     .verification {
                         text-align: center;
                         margin-top: 14px;
@@ -327,23 +328,29 @@ export const exportPDF = async (req, res) => {
                         letter-spacing: 0.5px;
                         text-transform: uppercase;
                     }
+                    .verification .signature-line {
+                        width: 40%;
+                        max-width: 250px;
+                        margin: 8px auto 2px;
+                        border-bottom: 1px solid #000;
+                    }
+                    .verification .signature-label {
+                        font-size: 8px;
+                        color: #555;
+                        margin-bottom: 4px;
+                        display: block;
+                    }
                     .verification .supervisor-name {
                         font-size: 13px;
                         font-weight: 700;
                         color: #000;
-                        margin-top: 10px;
+                        margin-top: 2px;
                         letter-spacing: 0.3px;
                     }
                     .verification .supervisor-title {
                         font-size: 10px;
                         color: #333;
                         margin-top: 1px;
-                    }
-                    .verification .signature-line {
-                        width: 50%;
-                        max-width: 300px;
-                        margin: 6px auto 0;
-                        border-bottom: 1px solid #000;
                     }
                     .verification .in-charge {
                         font-size: 9px;
@@ -352,7 +359,7 @@ export const exportPDF = async (req, res) => {
                         text-transform: uppercase;
                         letter-spacing: 0.5px;
                     }
-                    /* Footer – compact */
+                    /* Footer */
                     .footer {
                         text-align: center;
                         font-size: 8px;
@@ -370,11 +377,9 @@ export const exportPDF = async (req, res) => {
                         font-weight: 600;
                         color: #000;
                     }
-                    /* Print-specific */
                     @media print {
                         body { padding: 0; }
                         .report { border: none; box-shadow: none; }
-                        table tbody tr:hover { background: #f9f9f9; }
                         .verification { page-break-inside: avoid; }
                         .summary-box { page-break-inside: avoid; }
                     }
@@ -382,14 +387,12 @@ export const exportPDF = async (req, res) => {
             </head>
             <body>
                 <div class="report">
-                    <!-- Header – No Emoji -->
                     <div class="header">
                         <h1>Daily Time Tracker</h1>
                         <div class="sub">OJT DTR Report</div>
                         <div class="date-range">Period: ${dateRange}</div>
                     </div>
 
-                    <!-- User Info -->
                     <div class="info-grid">
                         <div class="item"><span class="label">Intern:</span><span class="value">${fullName}</span></div>
                         <div class="item"><span class="label">Email:</span><span class="value">${user.email || 'N/A'}</span></div>
@@ -399,16 +402,23 @@ export const exportPDF = async (req, res) => {
                         <div class="item"><span class="label">Position:</span><span class="value">${user.position || 'N/A'}</span></div>
                     </div>
 
-                    <!-- Shift Table -->
                     <div class="table-wrap">
                         <table>
+                            <!-- PRECISE COLUMN WIDTH DEFINITIONS -->
+                            <colgroup>
+                                <col style="width: 12%;"> <!-- Date -->
+                                <col style="width: 28%;"> <!-- Morning -->
+                                <col style="width: 28%;"> <!-- Afternoon -->
+                                <col style="width: 20%;"> <!-- Overtime -->
+                                <col style="width: 12%;"> <!-- Total -->
+                            </colgroup>
                             <thead>
                                 <tr>
-                                    <th style="width:12%;">Date</th>
-                                    <th style="width:30%;">Morning</th>
-                                    <th style="width:30%;">Afternoon</th>
-                                    <th style="width:18%;">Overtime</th>
-                                    <th style="width:10%;text-align:right;">Total</th>
+                                    <th>Date</th>
+                                    <th>Morning</th>
+                                    <th>Afternoon</th>
+                                    <th>Overtime</th>
+                                    <th>Total</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -432,10 +442,10 @@ export const exportPDF = async (req, res) => {
 
             html += `
                 <tr>
-                    <td>${formatDate(shift.date)}</td>
-                    <td>${morningStr}</td>
-                    <td>${afternoonStr}</td>
-                    <td>${otStr}</td>
+                    <td style="text-align:center;">${formatDate(shift.date)}</td>
+                    <td style="text-align:center;">${morningStr}</td>
+                    <td style="text-align:center;">${afternoonStr}</td>
+                    <td style="text-align:center;">${otStr}</td>
                     <td style="text-align:right; font-weight:600;">${total.toFixed(1)}</td>
                 </tr>
             `;
@@ -470,12 +480,13 @@ export const exportPDF = async (req, res) => {
                     </div>
                 </div>
 
-                <!-- Verification -->
+                <!-- Verification (Signature space moved ABOVE the name) -->
                 <div class="verification">
                     <div class="title">Verified as to the prescribed office hours:</div>
+                    <div class="signature-line"></div>
+                    <span class="signature-label">Signature over printed name</span>
                     <div class="supervisor-name">${user.supervisor || 'N/A'}</div>
                     <div class="supervisor-title">${user.supervisor_title || 'N/A'}</div>
-                    <div class="signature-line"></div>
                     <div class="in-charge">In Charge</div>
                 </div>
 
