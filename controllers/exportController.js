@@ -238,7 +238,7 @@ export const exportPDF = async (req, res) => {
                         padding: 8px 14px;
                         border: 1px solid #ccc;
                         margin-bottom: 10px;
-                        font-size: 10px; /* was 9px – increased by 1 */
+                        font-size: 12px;
                     }
                     .info-grid .item {
                         display: flex;
@@ -407,7 +407,7 @@ export const exportPDF = async (req, res) => {
                             <div class="item"><span class="label">Intern:</span><span class="value">${fullName}</span></div>
                             <div class="item"><span class="label">Email:</span><span class="value">${user.email || 'N/A'}</span></div>
                             <div class="item"><span class="label">School:</span><span class="value">${user.school || 'N/A'}</span></div>
-                            <div class="item"><span class="label">Dept:</span><span class="value">${user.department || 'N/A'}</span></div>
+                            <div class="item"><span class="label">Course/Dept:</span><span class="value">${user.department || 'N/A'}</span></div>
                             <div class="item"><span class="label">Company:</span><span class="value">${user.company || 'N/A'}</span></div>
                             <div class="item"><span class="label">Position:</span><span class="value">${user.position || 'N/A'}</span></div>
                         </div>
