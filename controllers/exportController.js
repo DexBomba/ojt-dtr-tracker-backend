@@ -143,7 +143,6 @@ export const exportPDF = async (req, res) => {
             return res.status(404).json({ message: 'No shifts to export' });
         }
 
-        // Get user info
         const users = await query(
             `SELECT name, email, full_name, school, department, company, position, supervisor, supervisor_title, target_hours
             FROM users WHERE id = ?`,
@@ -153,27 +152,19 @@ export const exportPDF = async (req, res) => {
         const user = users[0] || {};
         const fullName = user.full_name || user.name || 'N/A';
 
-        // Calculate totals
         const totalHours = shifts.reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
         const targetHours = parseFloat(user.target_hours) || 500;
         const remaining = Math.max(0, targetHours - totalHours);
         const progress = targetHours > 0 ? (totalHours / targetHours) * 100 : 0;
 
-        // Determine date range
         const dates = shifts.map(s => new Date(s.date));
         const minDate = new Date(Math.min(...dates));
         const maxDate = new Date(Math.max(...dates));
         const dateRange = `${minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} - ${maxDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
 
-        // Get current date for footer
         const now = new Date();
-        const currentDate = now.toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-        });
+        const currentDate = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-        // Build HTML for PDF
         let html = `
             <!DOCTYPE html>
             <html>
@@ -181,24 +172,18 @@ export const exportPDF = async (req, res) => {
                 <meta charset="UTF-8">
                 <title>Daily Time Tracker</title>
                 <style>
-                    /* A4 Page Setup */
                     @page {
                         size: A4 portrait;
                         margin: 12mm 14mm;
                         @top-center { content: none; }
                         @bottom-center { content: none; }
                     }
-
-                    /* Page layout – push footer to bottom */
                     html, body {
                         height: 100%;
                         margin: 0;
                         padding: 0;
                     }
                     body {
-                        display: flex;
-                        flex-direction: column;
-                        min-height: 100vh;
                         font-family: 'Times New Roman', 'Georgia', serif;
                         background: #fff;
                         color: #000;
@@ -206,15 +191,17 @@ export const exportPDF = async (req, res) => {
                         line-height: 1.4;
                     }
                     .report {
-                        flex: 1;
-                        display: flex;
-                        flex-direction: column;
+                        position: relative;
+                        min-height: 100%;
                         max-width: 100%;
                         margin: 0 auto;
                         background: #fff;
-                        padding: 2px 0;
+                        padding: 2px 0 40px; /* bottom space for footer */
+                        box-sizing: border-box;
                     }
-
+                    .content {
+                        /* Takes all space except footer */
+                    }
                     /* ===== HEADER ===== */
                     .header {
                         text-align: center;
@@ -228,7 +215,6 @@ export const exportPDF = async (req, res) => {
                         margin: 0;
                         letter-spacing: 1px;
                         font-weight: 700;
-                        font-family: 'Times New Roman', 'Georgia', serif;
                     }
                     .header .sub {
                         font-size: 12px;
@@ -242,7 +228,6 @@ export const exportPDF = async (req, res) => {
                         margin-top: 2px;
                         font-style: italic;
                     }
-
                     /* ===== USER INFO ===== */
                     .info-grid {
                         display: grid;
@@ -265,7 +250,6 @@ export const exportPDF = async (req, res) => {
                     .info-grid .value {
                         color: #000;
                     }
-
                     /* ===== TABLE ===== */
                     .table-wrap {
                         overflow-x: auto;
@@ -289,7 +273,6 @@ export const exportPDF = async (req, res) => {
                         text-transform: uppercase;
                         letter-spacing: 0.5px;
                         border: 1px solid #000;
-                        font-family: 'Times New Roman', 'Georgia', serif;
                     }
                     table td {
                         padding: 3px 6px;
@@ -317,7 +300,6 @@ export const exportPDF = async (req, res) => {
                     table .totals-row td:first-child {
                         text-align: center;
                     }
-
                     /* ===== SUMMARY BOX ===== */
                     .summary-box {
                         display: flex;
@@ -334,7 +316,6 @@ export const exportPDF = async (req, res) => {
                         font-size: 15px;
                         font-weight: 700;
                         color: #000;
-                        font-family: 'Times New Roman', 'Georgia', serif;
                     }
                     .summary-box .stat .label {
                         font-size: 8px;
@@ -342,7 +323,6 @@ export const exportPDF = async (req, res) => {
                         text-transform: uppercase;
                         letter-spacing: 0.5px;
                     }
-
                     /* ===== VERIFICATION ===== */
                     .verification {
                         text-align: center;
@@ -356,7 +336,6 @@ export const exportPDF = async (req, res) => {
                         color: #000;
                         text-transform: uppercase;
                         letter-spacing: 1px;
-                        font-family: 'Times New Roman', 'Georgia', serif;
                         margin-bottom: 16px;
                     }
                     .verification .supervisor-name {
@@ -364,7 +343,6 @@ export const exportPDF = async (req, res) => {
                         font-weight: 700;
                         color: #000;
                         margin-top: 4px;
-                        font-family: 'Times New Roman', 'Georgia', serif;
                     }
                     .verification .supervisor-title {
                         font-size: 11px;
@@ -385,26 +363,26 @@ export const exportPDF = async (req, res) => {
                         text-transform: uppercase;
                         letter-spacing: 1px;
                     }
-
-                    /* ===== FOOTER – Minimal & Pushed to Bottom ===== */
+                    /* ===== FOOTER ===== */
                     .footer {
-                        flex-shrink: 0;
+                        position: absolute;
+                        bottom: 0;
+                        left: 0;
+                        right: 0;
                         text-align: center;
                         font-size: 8px;
                         color: #555;
                         padding-top: 10px;
-                        margin-top: 14px;
                         border-top: 1px solid #ccc;
                         line-height: 1.5;
                         font-family: 'Times New Roman', 'Georgia', serif;
+                        background: #fff;
                     }
                     .footer .copyright {
                         font-size: 7.5px;
                         color: #888;
                         margin-top: 2px;
                     }
-
-                    /* ===== PRINT ===== */
                     @media print {
                         body { padding: 0; }
                         .report { border: none; box-shadow: none; }
@@ -415,37 +393,34 @@ export const exportPDF = async (req, res) => {
             </head>
             <body>
                 <div class="report">
+                    <div class="content">
+                        <div class="header">
+                            <h1>Daily Time Tracker</h1>
+                            <div class="sub">OJT DTR Report</div>
+                            <div class="date-range">Period: ${dateRange}</div>
+                        </div>
 
-                    <!-- ===== HEADER ===== -->
-                    <div class="header">
-                        <h1>Daily Time Tracker</h1>
-                        <div class="sub">OJT DTR Report</div>
-                        <div class="date-range">Period: ${dateRange}</div>
-                    </div>
+                        <div class="info-grid">
+                            <div class="item"><span class="label">Intern:</span><span class="value">${fullName}</span></div>
+                            <div class="item"><span class="label">Email:</span><span class="value">${user.email || 'N/A'}</span></div>
+                            <div class="item"><span class="label">School:</span><span class="value">${user.school || 'N/A'}</span></div>
+                            <div class="item"><span class="label">Dept:</span><span class="value">${user.department || 'N/A'}</span></div>
+                            <div class="item"><span class="label">Company:</span><span class="value">${user.company || 'N/A'}</span></div>
+                            <div class="item"><span class="label">Position:</span><span class="value">${user.position || 'N/A'}</span></div>
+                        </div>
 
-                    <!-- ===== USER INFO ===== -->
-                    <div class="info-grid">
-                        <div class="item"><span class="label">Intern:</span><span class="value">${fullName}</span></div>
-                        <div class="item"><span class="label">Email:</span><span class="value">${user.email || 'N/A'}</span></div>
-                        <div class="item"><span class="label">School:</span><span class="value">${user.school || 'N/A'}</span></div>
-                        <div class="item"><span class="label">Dept:</span><span class="value">${user.department || 'N/A'}</span></div>
-                        <div class="item"><span class="label">Company:</span><span class="value">${user.company || 'N/A'}</span></div>
-                        <div class="item"><span class="label">Position:</span><span class="value">${user.position || 'N/A'}</span></div>
-                    </div>
-
-                    <!-- ===== TABLE ===== -->
-                    <div class="table-wrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th style="width:11%;">Date</th>
-                                    <th style="width:28%;">Morning</th>
-                                    <th style="width:28%;">Afternoon</th>
-                                    <th style="width:18%;">Overtime</th>
-                                    <th style="width:15%;">Total (hrs)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                        <div class="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th style="width:11%;">Date</th>
+                                        <th style="width:28%;">Morning</th>
+                                        <th style="width:28%;">Afternoon</th>
+                                        <th style="width:18%;">Overtime</th>
+                                        <th style="width:15%;">Total (hrs)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
         `;
 
         shifts.forEach(shift => {
@@ -476,52 +451,51 @@ export const exportPDF = async (req, res) => {
         });
 
         html += `
-                            <tr class="totals-row">
-                                <td colspan="4"><strong>TOTAL HOURS</strong></td>
-                                <td><strong>${totalHours.toFixed(1)}</strong></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                                <tr class="totals-row">
+                                    <td colspan="4"><strong>TOTAL HOURS</strong></td>
+                                    <td><strong>${totalHours.toFixed(1)}</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
 
-                <!-- ===== SUMMARY BOX ===== -->
-                <div class="summary-box">
-                    <div class="stat">
-                        <div class="number">${totalHours.toFixed(1)}</div>
-                        <div class="label">Completed</div>
+                    <div class="summary-box">
+                        <div class="stat">
+                            <div class="number">${totalHours.toFixed(1)}</div>
+                            <div class="label">Completed</div>
+                        </div>
+                        <div class="stat">
+                            <div class="number">${targetHours}</div>
+                            <div class="label">Target</div>
+                        </div>
+                        <div class="stat">
+                            <div class="number">${remaining.toFixed(1)}</div>
+                            <div class="label">Remaining</div>
+                        </div>
+                        <div class="stat">
+                            <div class="number">${progress.toFixed(1)}%</div>
+                            <div class="label">Progress</div>
+                        </div>
                     </div>
-                    <div class="stat">
-                        <div class="number">${targetHours}</div>
-                        <div class="label">Target</div>
-                    </div>
-                    <div class="stat">
-                        <div class="number">${remaining.toFixed(1)}</div>
-                        <div class="label">Remaining</div>
-                    </div>
-                    <div class="stat">
-                        <div class="number">${progress.toFixed(1)}%</div>
-                        <div class="label">Progress</div>
-                    </div>
-                </div>
 
-                <!-- ===== VERIFICATION ===== -->
-                <div class="verification">
-                    <div class="title">Verified as to the prescribed office hours:</div>
-                    <div class="supervisor-name">${user.supervisor || 'N/A'}</div>
-                    <div class="supervisor-title">${user.supervisor_title || 'N/A'}</div>
-                    <div class="signature-line"></div>
-                    <div class="in-charge">In Charge</div>
-                </div>
+                    <div class="verification">
+                        <div class="title">Verified as to the prescribed office hours:</div>
+                        <div class="supervisor-name">${user.supervisor || 'N/A'}</div>
+                        <div class="supervisor-title">${user.supervisor_title || 'N/A'}</div>
+                        <div class="signature-line"></div>
+                        <div class="in-charge">In Charge</div>
+                    </div>
+                </div> <!-- end .content -->
 
-                <!-- ===== FOOTER (Minimal + Bottom) ===== -->
+                <!-- ===== FOOTER ===== -->
                 <div class="footer">
-                    <p style="font-size:7.5px; color:#555; letter-spacing:0.3px; font-family:'Times New Roman','Georgia',serif;">
+                    <p style="font-size:7.5px; color:#555; letter-spacing:0.3px;">
                         © 2026 OJT DTR Tracker · Developed by John Dexter Obut · Approved by Enrico Emil Dela Rosa
                     </p>
                     <p class="copyright">Report generated on ${currentDate}</p>
                 </div>
 
-            </div>
+            </div> <!-- end .report -->
         </body>
         </html>
         `;
