@@ -345,7 +345,7 @@ export const exportPDF = async (req, res) => {
                         text-transform: uppercase;
                         letter-spacing: 1px;
                         font-family: 'Times New Roman', 'Georgia', serif;
-                        margin-bottom: 16px;
+                        margin-bottom: 19px;
                     }
                     .verification .supervisor-name {
                         font-size: 14px;
