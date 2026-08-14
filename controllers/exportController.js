@@ -145,7 +145,7 @@ export const exportPDF = async (req, res) => {
 
         // Get user info
         const users = await query(
-            `SELECT name, email, full_name, school, department, company, position, supervisor, supervisor_title 
+            `SELECT name, email, full_name, school, department, company, position, supervisor, supervisor_title, target_hours
             FROM users WHERE id = ?`,
             [userId]
         );
@@ -165,7 +165,15 @@ export const exportPDF = async (req, res) => {
         const maxDate = new Date(Math.max(...dates));
         const dateRange = `${minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} - ${maxDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
 
-        // Build HTML for PDF
+        // Get current date for footer (server time)
+        const now = new Date();
+        const currentDate = now.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        });
+
+        // Build HTML for PDF (Compact Version)
         let html = `
             <!DOCTYPE html>
             <html>
@@ -176,55 +184,57 @@ export const exportPDF = async (req, res) => {
                     /* Reset & Base */
                     * { margin: 0; padding: 0; box-sizing: border-box; }
                     body { 
-                        font-family: 'Times New Roman', Times, serif;
+                        font-family: 'Arial', 'Helvetica', sans-serif;
                         background: #fff;
-                        padding: 40px 50px;
+                        padding: 20px 30px;
                         color: #2c3e50;
-                        line-height: 1.6;
+                        line-height: 1.4;
+                        font-size: 12px;
                     }
                     /* Container */
                     .report {
-                        max-width: 1100px;
+                        max-width: 1000px;
                         margin: 0 auto;
                         background: #fff;
-                        padding: 20px 30px;
+                        padding: 15px 20px;
                         border: 1px solid #ddd;
-                        box-shadow: 0 0 20px rgba(0,0,0,0.05);
+                        box-shadow: 0 0 10px rgba(0,0,0,0.03);
                     }
                     /* Header */
                     .header {
                         text-align: center;
-                        border-bottom: 3px solid #e67e22;
-                        padding-bottom: 15px;
-                        margin-bottom: 25px;
+                        border-bottom: 2px solid #e67e22;
+                        padding-bottom: 10px;
+                        margin-bottom: 15px;
                     }
                     .header h1 {
-                        font-size: 28px;
+                        font-size: 22px;
                         color: #2c3e50;
                         margin: 0;
-                        letter-spacing: 1px;
+                        letter-spacing: 0.5px;
                     }
                     .header .sub {
-                        font-size: 16px;
+                        font-size: 13px;
                         color: #7f8c8d;
-                        margin-top: 4px;
+                        margin-top: 2px;
                     }
                     .header .date-range {
-                        font-size: 14px;
+                        font-size: 12px;
                         color: #7f8c8d;
                         margin-top: 2px;
                         font-style: italic;
                     }
-                    /* User Info Grid */
+                    /* User Info Grid - Compact */
                     .info-grid {
                         display: grid;
-                        grid-template-columns: 1fr 1fr;
-                        gap: 10px 20px;
+                        grid-template-columns: 1fr 1fr 1fr;
+                        gap: 4px 15px;
                         background: #fdf6ec;
-                        padding: 18px 22px;
-                        border-radius: 8px;
-                        margin-bottom: 25px;
-                        border-left: 4px solid #e67e22;
+                        padding: 10px 16px;
+                        border-radius: 6px;
+                        margin-bottom: 15px;
+                        border-left: 3px solid #e67e22;
+                        font-size: 11px;
                     }
                     .info-grid .item {
                         display: flex;
@@ -232,36 +242,37 @@ export const exportPDF = async (req, res) => {
                     .info-grid .label {
                         font-weight: 700;
                         color: #2c3e50;
-                        min-width: 130px;
+                        min-width: 80px;
                     }
                     .info-grid .value {
                         color: #34495e;
                     }
-                    /* Table */
+                    /* Table - Compact */
                     .table-wrap {
                         overflow-x: auto;
-                        margin-bottom: 25px;
+                        margin-bottom: 15px;
                     }
                     table {
                         width: 100%;
                         border-collapse: collapse;
-                        font-size: 14px;
-                        border-radius: 8px;
+                        font-size: 11px;
+                        border-radius: 4px;
                         overflow: hidden;
-                        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
                     }
                     table thead {
                         background: #2c3e50;
                         color: #fff;
                     }
                     table th {
-                        padding: 10px 12px;
+                        padding: 6px 8px;
                         text-align: left;
                         font-weight: 600;
-                        letter-spacing: 0.5px;
+                        letter-spacing: 0.3px;
+                        font-size: 10px;
+                        text-transform: uppercase;
                     }
                     table td {
-                        padding: 8px 12px;
+                        padding: 5px 8px;
                         border-bottom: 1px solid #ecf0f1;
                     }
                     table tbody tr:nth-child(even) {
@@ -276,76 +287,84 @@ export const exportPDF = async (req, res) => {
                         border-top: 2px solid #e67e22;
                     }
                     table .totals-row td {
-                        padding-top: 12px;
-                        padding-bottom: 12px;
+                        padding-top: 8px;
+                        padding-bottom: 8px;
+                        font-size: 12px;
                     }
-                    /* Summary Box */
+                    /* Summary Box - Compact */
                     .summary-box {
                         display: flex;
                         justify-content: space-around;
                         background: #fdf6ec;
-                        padding: 16px 20px;
-                        border-radius: 8px;
-                        margin: 20px 0 30px;
+                        padding: 10px 16px;
+                        border-radius: 6px;
+                        margin: 12px 0 20px;
                         border: 1px solid #e8d5c4;
                     }
                     .summary-box .stat {
                         text-align: center;
                     }
                     .summary-box .stat .number {
-                        font-size: 22px;
+                        font-size: 18px;
                         font-weight: 700;
                         color: #e67e22;
                     }
                     .summary-box .stat .label {
-                        font-size: 13px;
+                        font-size: 10px;
                         color: #7f8c8d;
+                        text-transform: uppercase;
+                        letter-spacing: 0.3px;
                     }
-                    /* Signature Section */
+                    /* Signature Section - Compact */
                     .signature {
                         display: flex;
                         justify-content: space-between;
-                        margin-top: 40px;
-                        padding-top: 20px;
+                        margin-top: 25px;
+                        padding-top: 15px;
                         border-top: 2px dashed #bdc3c7;
                     }
                     .signature .block {
                         width: 45%;
                     }
                     .signature .block p {
-                        margin: 6px 0;
+                        margin: 4px 0;
+                        font-size: 11px;
                     }
                     .signature .block .line {
-                        margin-top: 30px;
+                        margin-top: 20px;
                         border-bottom: 1px solid #2c3e50;
                         width: 80%;
                     }
                     .signature .block .line-label {
-                        font-size: 12px;
+                        font-size: 10px;
                         color: #7f8c8d;
                         margin-top: 2px;
                     }
-                    /* Footer */
+                    /* Footer - Simple with Developer Name */
                     .footer {
                         text-align: center;
-                        font-size: 11px;
+                        font-size: 10px;
                         color: #95a5a6;
-                        margin-top: 30px;
-                        padding-top: 15px;
+                        margin-top: 20px;
+                        padding-top: 12px;
                         border-top: 1px solid #ecf0f1;
+                        line-height: 1.6;
                     }
-                    .footer a {
-                        color: #95a5a6;
-                        text-decoration: none;
-                    }
-                    .footer a:hover {
-                        text-decoration: underline;
+                    .footer .dev {
+                        font-weight: 600;
+                        color: #e67e22;
                     }
                     /* Print-specific */
                     @media print {
-                        body { padding: 20px; }
+                        body { padding: 10px; }
                         .report { border: none; box-shadow: none; }
                         table tbody tr:hover { background: #f9f9f9; }
+                        .signature { page-break-inside: avoid; }
+                        .summary-box { page-break-inside: avoid; }
+                    }
+                    /* Page break control */
+                    .page-break {
+                        page-break-after: always;
                     }
                 </style>
             </head>
@@ -355,7 +374,7 @@ export const exportPDF = async (req, res) => {
                     <div class="header">
                         <h1>📄 OJT DTR Tracker</h1>
                         <div class="sub">Daily Time Record</div>
-                        <div class="date-range">Report Period: ${dateRange}</div>
+                        <div class="date-range">Period: ${dateRange}</div>
                     </div>
 
                     <!-- User Info -->
@@ -363,7 +382,7 @@ export const exportPDF = async (req, res) => {
                         <div class="item"><span class="label">Intern:</span><span class="value">${fullName}</span></div>
                         <div class="item"><span class="label">Email:</span><span class="value">${user.email || 'N/A'}</span></div>
                         <div class="item"><span class="label">School:</span><span class="value">${user.school || 'N/A'}</span></div>
-                        <div class="item"><span class="label">Department:</span><span class="value">${user.department || 'N/A'}</span></div>
+                        <div class="item"><span class="label">Dept:</span><span class="value">${user.department || 'N/A'}</span></div>
                         <div class="item"><span class="label">Company:</span><span class="value">${user.company || 'N/A'}</span></div>
                         <div class="item"><span class="label">Position:</span><span class="value">${user.position || 'N/A'}</span></div>
                     </div>
@@ -373,11 +392,11 @@ export const exportPDF = async (req, res) => {
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Date</th>
-                                    <th>Morning</th>
-                                    <th>Afternoon</th>
-                                    <th>Overtime</th>
-                                    <th style="text-align:right;">Total (hrs)</th>
+                                    <th style="width:12%;">Date</th>
+                                    <th style="width:30%;">Morning</th>
+                                    <th style="width:30%;">Afternoon</th>
+                                    <th style="width:18%;">Overtime</th>
+                                    <th style="width:10%;text-align:right;">Total</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -390,13 +409,13 @@ export const exportPDF = async (req, res) => {
             const total = parseFloat(shift.total) || 0;
 
             const morningStr = shift.morning_in && shift.morning_out ?
-                `${formatTime(shift.morning_in)} - ${formatTime(shift.morning_out)} (${mDur.toFixed(2)} hrs)` :
+                `${formatTime(shift.morning_in)} - ${formatTime(shift.morning_out)} (${mDur.toFixed(1)}h)` :
                 '—';
             const afternoonStr = shift.afternoon_in && shift.afternoon_out ?
-                `${formatTime(shift.afternoon_in)} - ${formatTime(shift.afternoon_out)} (${aDur.toFixed(2)} hrs)` :
+                `${formatTime(shift.afternoon_in)} - ${formatTime(shift.afternoon_out)} (${aDur.toFixed(1)}h)` :
                 '—';
             const otStr = shift.overtime_in && shift.overtime_out ?
-                `${formatTime(shift.overtime_in)} - ${formatTime(shift.overtime_out)} (${oDur.toFixed(2)} hrs)` :
+                `${formatTime(shift.overtime_in)} - ${formatTime(shift.overtime_out)} (${oDur.toFixed(1)}h)` :
                 '—';
 
             html += `
@@ -405,7 +424,7 @@ export const exportPDF = async (req, res) => {
                     <td>${morningStr}</td>
                     <td>${afternoonStr}</td>
                     <td>${otStr}</td>
-                    <td style="text-align:right; font-weight:600;">${total.toFixed(2)}</td>
+                    <td style="text-align:right; font-weight:600;">${total.toFixed(1)}</td>
                 </tr>
             `;
         });
@@ -413,7 +432,7 @@ export const exportPDF = async (req, res) => {
         html += `
                             <tr class="totals-row">
                                 <td colspan="4" style="text-align:right;">Total Hours</td>
-                                <td style="text-align:right; font-size:16px;">${totalHours.toFixed(1)}</td>
+                                <td style="text-align:right; font-size:14px;">${totalHours.toFixed(1)}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -422,15 +441,15 @@ export const exportPDF = async (req, res) => {
                 <!-- Summary Box -->
                 <div class="summary-box">
                     <div class="stat">
-                        <div class="number">${totalHours.toFixed(1)} hrs</div>
-                        <div class="label">Total Completed</div>
+                        <div class="number">${totalHours.toFixed(1)}h</div>
+                        <div class="label">Completed</div>
                     </div>
                     <div class="stat">
-                        <div class="number">${targetHours} hrs</div>
-                        <div class="label">Target Hours</div>
+                        <div class="number">${targetHours}h</div>
+                        <div class="label">Target</div>
                     </div>
                     <div class="stat">
-                        <div class="number">${remaining.toFixed(1)} hrs</div>
+                        <div class="number">${remaining.toFixed(1)}h</div>
                         <div class="label">Remaining</div>
                     </div>
                     <div class="stat">
@@ -446,24 +465,29 @@ export const exportPDF = async (req, res) => {
                         <p>${fullName}</p>
                         <div class="line"></div>
                         <div class="line-label">Signature</div>
-                        <div style="margin-top:10px;"><em>Date: _______________</em></div>
+                        <div style="margin-top:6px; font-size:10px; color:#7f8c8d;">Date: _______________</div>
                     </div>
                     <div class="block" style="text-align:right;">
                         <p><strong>Supervisor</strong></p>
                         <p>${user.supervisor || 'N/A'}</p>
                         <div class="line" style="margin-left:auto;"></div>
                         <div class="line-label">Signature</div>
-                        <div style="margin-top:10px;"><em>Date: _______________</em></div>
+                        <div style="margin-top:6px; font-size:10px; color:#7f8c8d;">Date: _______________</div>
                     </div>
                 </div>
 
-                <!-- Footer -->
+                <!-- Footer - Simple with Developer Name -->
                 <div class="footer">
-                    This is an official DTR generated from OJT DTR Tracker (Academic Project).
-                    <br>© 2026 OJT DTR Tracker — For Student Use &nbsp;·&nbsp; 
-                    <a href="#">Privacy Policy</a> &nbsp;·&nbsp; 
-                    <a href="#">Terms of Service</a>
-                    <br><span style="font-size:10px;">Report generated on ${new Date().toLocaleString()}</span>
+                    <p>
+                        This is an official DTR generated from OJT DTR Tracker (Academic Project)<br>
+                        © 2026 OJT DTR Tracker — For Student Use &nbsp;·&nbsp; 
+                        <a href="#">Privacy Policy</a> &nbsp;·&nbsp; 
+                        <a href="#">Terms of Service</a>
+                    </p>
+                    <p style="margin-top:4px;">
+                        <span class="dev">Developed by John Dexter Obut</span> &nbsp;·&nbsp; 
+                        Report generated on ${currentDate}
+                    </p>
                 </div>
             </div>
         </body>
