@@ -173,7 +173,7 @@ export const exportPDF = async (req, res) => {
             day: 'numeric' 
         });
 
-        // Build HTML for PDF (Professional Layout)
+        // Build HTML for PDF
         let html = `
             <!DOCTYPE html>
             <html>
@@ -185,18 +185,30 @@ export const exportPDF = async (req, res) => {
                     @page {
                         size: A4 portrait;
                         margin: 12mm 14mm;
+                        @top-center { content: none; }
+                        @bottom-center { content: none; }
                     }
-                    /* Reset & Base */
-                    * { margin: 0; padding: 0; box-sizing: border-box; }
-                    body { 
+
+                    /* Page layout – push footer to bottom */
+                    html, body {
+                        height: 100%;
+                        margin: 0;
+                        padding: 0;
+                    }
+                    body {
+                        display: flex;
+                        flex-direction: column;
+                        min-height: 100vh;
                         font-family: 'Times New Roman', 'Georgia', serif;
                         background: #fff;
-                        padding: 0;
                         color: #000;
                         font-size: 10px;
                         line-height: 1.4;
                     }
                     .report {
+                        flex: 1;
+                        display: flex;
+                        flex-direction: column;
                         max-width: 100%;
                         margin: 0 auto;
                         background: #fff;
@@ -345,56 +357,50 @@ export const exportPDF = async (req, res) => {
                         text-transform: uppercase;
                         letter-spacing: 1px;
                         font-family: 'Times New Roman', 'Georgia', serif;
-                        margin-bottom: 19px;
+                        margin-bottom: 16px;
                     }
                     .verification .supervisor-name {
                         font-size: 14px;
                         font-weight: 700;
                         color: #000;
-                        margin-top: 10px;
+                        margin-top: 4px;
                         font-family: 'Times New Roman', 'Georgia', serif;
                     }
                     .verification .supervisor-title {
                         font-size: 11px;
                         color: #333;
                         margin-top: 2px;
+                        margin-bottom: 12px;
                     }
                     .verification .signature-line {
                         width: 50%;
                         max-width: 280px;
-                        margin: 6px auto 0;
+                        margin: 0 auto;
                         border-bottom: 1.5px solid #000;
                     }
                     .verification .in-charge {
                         font-size: 10px;
                         color: #333;
-                        margin-top: 2px;
+                        margin-top: 4px;
                         text-transform: uppercase;
                         letter-spacing: 1px;
                     }
 
-                    /* ===== FOOTER ===== */
+                    /* ===== FOOTER – Minimal & Pushed to Bottom ===== */
                     .footer {
+                        flex-shrink: 0;
                         text-align: center;
-                        font-size: 8.5px;
-                        color: #333;
-                        margin-top: 14px;
+                        font-size: 8px;
+                        color: #555;
                         padding-top: 10px;
+                        margin-top: 14px;
                         border-top: 1px solid #ccc;
-                        line-height: 1.6;
+                        line-height: 1.5;
                         font-family: 'Times New Roman', 'Georgia', serif;
-                    }
-                    .footer .dev {
-                        font-weight: 700;
-                        color: #000;
-                    }
-                    .footer .approved {
-                        font-weight: 700;
-                        color: #000;
                     }
                     .footer .copyright {
                         font-size: 7.5px;
-                        color: #777;
+                        color: #888;
                         margin-top: 2px;
                     }
 
@@ -507,12 +513,11 @@ export const exportPDF = async (req, res) => {
                     <div class="in-charge">In Charge</div>
                 </div>
 
-                <!-- ===== YOUR EXACT FOOTER ===== -->
+                <!-- ===== FOOTER (Minimal + Bottom) ===== -->
                 <div class="footer">
-                    <p>This is an official DTR generated from OJT DTR Tracker (Intern Project)</p>
-                    <p><span class="dev">Developed by John Dexter Obut - Intern</span></p>
-                    <p><span class="approved">Approved by Enrico Emil Dela Rosa - Software Engineer</span></p>
-                    <p class="copyright">© 2026 OJT DTR Tracker (For Student Intern Use)</p>
+                    <p style="font-size:7.5px; color:#555; letter-spacing:0.3px; font-family:'Times New Roman','Georgia',serif;">
+                        © 2026 OJT DTR Tracker · Developed by John Dexter Obut · Approved by Enrico Emil Dela Rosa
+                    </p>
                     <p class="copyright">Report generated on ${currentDate}</p>
                 </div>
 
