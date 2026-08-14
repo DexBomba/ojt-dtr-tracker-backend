@@ -133,7 +133,7 @@ export const exportExcel = async (req, res) => {
     }
 };
 
-// ===== EXPORT PDF (HTML version for print) =====
+// ===== EXPORT PDF =====
 export const exportPDF = async (req, res) => {
     try {
         const shifts = req.body.shifts;
@@ -153,59 +153,234 @@ export const exportPDF = async (req, res) => {
         const user = users[0] || {};
         const fullName = user.full_name || user.name || 'N/A';
 
+        // Calculate totals
         const totalHours = shifts.reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
+        const targetHours = parseFloat(user.target_hours) || 500;
+        const remaining = Math.max(0, targetHours - totalHours);
+        const progress = targetHours > 0 ? (totalHours / targetHours) * 100 : 0;
+
+        // Determine date range
+        const dates = shifts.map(s => new Date(s.date));
+        const minDate = new Date(Math.min(...dates));
+        const maxDate = new Date(Math.max(...dates));
+        const dateRange = `${minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} - ${maxDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
 
         // Build HTML for PDF
         let html = `
+            <!DOCTYPE html>
             <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <title>OJT DTR</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; padding: 40px; }
-                        h1 { text-align: center; color: #2c3e50; }
-                        .header { text-align: center; color: #5d6d7e; margin-bottom: 30px; }
-                        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-                        th { background: #fdf6ec; padding: 10px; border: 1px solid #e8d5c4; text-align: left; }
-                        td { padding: 8px 10px; border: 1px solid #e8d5c4; }
-                        .total-row { font-weight: bold; }
-                        .footer { margin-top: 30px; text-align: center; font-size: 0.8rem; color: #5d6d7e; border-top: 1px solid #e8d5c4; padding-top: 20px; }
-                        .signature { margin-top: 40px; display: flex; justify-content: space-between; }
-                        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; padding: 20px; background: #fdf6ec; border-radius: 8px; }
-                        .info-grid div { padding: 4px 0; }
-                        .info-label { font-weight: 600; color: #2c3e50; }
-                    </style>
-                </head>
-                <body>
-                    <h1>OJT DTR Tracker</h1>
-                    <p class="header">Daily Time Record</p>
-        `;
-
-        // User info
-        html += `
-                    <div class="info-grid">
-                        <div><span class="info-label">Full Name:</span> ${fullName}</div>
-                        <div><span class="info-label">Email:</span> ${user.email || 'N/A'}</div>
-                        <div><span class="info-label">School:</span> ${user.school || 'N/A'}</div>
-                        <div><span class="info-label">Department:</span> ${user.department || 'N/A'}</div>
-                        <div><span class="info-label">Company:</span> ${user.company || 'N/A'}</div>
-                        <div><span class="info-label">Position:</span> ${user.position || 'N/A'}</div>
+            <head>
+                <meta charset="UTF-8">
+                <title>OJT DTR Report</title>
+                <style>
+                    /* Reset & Base */
+                    * { margin: 0; padding: 0; box-sizing: border-box; }
+                    body { 
+                        font-family: 'Times New Roman', Times, serif;
+                        background: #fff;
+                        padding: 40px 50px;
+                        color: #2c3e50;
+                        line-height: 1.6;
+                    }
+                    /* Container */
+                    .report {
+                        max-width: 1100px;
+                        margin: 0 auto;
+                        background: #fff;
+                        padding: 20px 30px;
+                        border: 1px solid #ddd;
+                        box-shadow: 0 0 20px rgba(0,0,0,0.05);
+                    }
+                    /* Header */
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #e67e22;
+                        padding-bottom: 15px;
+                        margin-bottom: 25px;
+                    }
+                    .header h1 {
+                        font-size: 28px;
+                        color: #2c3e50;
+                        margin: 0;
+                        letter-spacing: 1px;
+                    }
+                    .header .sub {
+                        font-size: 16px;
+                        color: #7f8c8d;
+                        margin-top: 4px;
+                    }
+                    .header .date-range {
+                        font-size: 14px;
+                        color: #7f8c8d;
+                        margin-top: 2px;
+                        font-style: italic;
+                    }
+                    /* User Info Grid */
+                    .info-grid {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 10px 20px;
+                        background: #fdf6ec;
+                        padding: 18px 22px;
+                        border-radius: 8px;
+                        margin-bottom: 25px;
+                        border-left: 4px solid #e67e22;
+                    }
+                    .info-grid .item {
+                        display: flex;
+                    }
+                    .info-grid .label {
+                        font-weight: 700;
+                        color: #2c3e50;
+                        min-width: 130px;
+                    }
+                    .info-grid .value {
+                        color: #34495e;
+                    }
+                    /* Table */
+                    .table-wrap {
+                        overflow-x: auto;
+                        margin-bottom: 25px;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        font-size: 14px;
+                        border-radius: 8px;
+                        overflow: hidden;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+                    }
+                    table thead {
+                        background: #2c3e50;
+                        color: #fff;
+                    }
+                    table th {
+                        padding: 10px 12px;
+                        text-align: left;
+                        font-weight: 600;
+                        letter-spacing: 0.5px;
+                    }
+                    table td {
+                        padding: 8px 12px;
+                        border-bottom: 1px solid #ecf0f1;
+                    }
+                    table tbody tr:nth-child(even) {
+                        background: #f9f9f9;
+                    }
+                    table tbody tr:hover {
+                        background: #fdf6ec;
+                    }
+                    table .totals-row {
+                        background: #fdf6ec !important;
+                        font-weight: 700;
+                        border-top: 2px solid #e67e22;
+                    }
+                    table .totals-row td {
+                        padding-top: 12px;
+                        padding-bottom: 12px;
+                    }
+                    /* Summary Box */
+                    .summary-box {
+                        display: flex;
+                        justify-content: space-around;
+                        background: #fdf6ec;
+                        padding: 16px 20px;
+                        border-radius: 8px;
+                        margin: 20px 0 30px;
+                        border: 1px solid #e8d5c4;
+                    }
+                    .summary-box .stat {
+                        text-align: center;
+                    }
+                    .summary-box .stat .number {
+                        font-size: 22px;
+                        font-weight: 700;
+                        color: #e67e22;
+                    }
+                    .summary-box .stat .label {
+                        font-size: 13px;
+                        color: #7f8c8d;
+                    }
+                    /* Signature Section */
+                    .signature {
+                        display: flex;
+                        justify-content: space-between;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 2px dashed #bdc3c7;
+                    }
+                    .signature .block {
+                        width: 45%;
+                    }
+                    .signature .block p {
+                        margin: 6px 0;
+                    }
+                    .signature .block .line {
+                        margin-top: 30px;
+                        border-bottom: 1px solid #2c3e50;
+                        width: 80%;
+                    }
+                    .signature .block .line-label {
+                        font-size: 12px;
+                        color: #7f8c8d;
+                        margin-top: 2px;
+                    }
+                    /* Footer */
+                    .footer {
+                        text-align: center;
+                        font-size: 11px;
+                        color: #95a5a6;
+                        margin-top: 30px;
+                        padding-top: 15px;
+                        border-top: 1px solid #ecf0f1;
+                    }
+                    .footer a {
+                        color: #95a5a6;
+                        text-decoration: none;
+                    }
+                    .footer a:hover {
+                        text-decoration: underline;
+                    }
+                    /* Print-specific */
+                    @media print {
+                        body { padding: 20px; }
+                        .report { border: none; box-shadow: none; }
+                        table tbody tr:hover { background: #f9f9f9; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="report">
+                    <!-- Header -->
+                    <div class="header">
+                        <h1>📄 OJT DTR Tracker</h1>
+                        <div class="sub">Daily Time Record</div>
+                        <div class="date-range">Report Period: ${dateRange}</div>
                     </div>
-        `;
 
-        // Table
-        html += `
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Morning</th>
-                                <th>Afternoon</th>
-                                <th>Overtime</th>
-                                <th>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                    <!-- User Info -->
+                    <div class="info-grid">
+                        <div class="item"><span class="label">Intern:</span><span class="value">${fullName}</span></div>
+                        <div class="item"><span class="label">Email:</span><span class="value">${user.email || 'N/A'}</span></div>
+                        <div class="item"><span class="label">School:</span><span class="value">${user.school || 'N/A'}</span></div>
+                        <div class="item"><span class="label">Department:</span><span class="value">${user.department || 'N/A'}</span></div>
+                        <div class="item"><span class="label">Company:</span><span class="value">${user.company || 'N/A'}</span></div>
+                        <div class="item"><span class="label">Position:</span><span class="value">${user.position || 'N/A'}</span></div>
+                    </div>
+
+                    <!-- Shift Table -->
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Morning</th>
+                                    <th>Afternoon</th>
+                                    <th>Overtime</th>
+                                    <th style="text-align:right;">Total (hrs)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
         `;
 
         shifts.forEach(shift => {
@@ -216,13 +391,13 @@ export const exportPDF = async (req, res) => {
 
             const morningStr = shift.morning_in && shift.morning_out ?
                 `${formatTime(shift.morning_in)} - ${formatTime(shift.morning_out)} (${mDur.toFixed(2)} hrs)` :
-                '-';
+                '—';
             const afternoonStr = shift.afternoon_in && shift.afternoon_out ?
                 `${formatTime(shift.afternoon_in)} - ${formatTime(shift.afternoon_out)} (${aDur.toFixed(2)} hrs)` :
-                '-';
+                '—';
             const otStr = shift.overtime_in && shift.overtime_out ?
                 `${formatTime(shift.overtime_in)} - ${formatTime(shift.overtime_out)} (${oDur.toFixed(2)} hrs)` :
-                '-';
+                '—';
 
             html += `
                 <tr>
@@ -230,44 +405,69 @@ export const exportPDF = async (req, res) => {
                     <td>${morningStr}</td>
                     <td>${afternoonStr}</td>
                     <td>${otStr}</td>
-                    <td style="font-weight:bold;">${total.toFixed(2)} hrs</td>
+                    <td style="text-align:right; font-weight:600;">${total.toFixed(2)}</td>
                 </tr>
             `;
         });
 
         html += `
-                            <tr style="font-weight:bold;background:#fdf6ec;">
-                                <td colspan="4" style="text-align:right;">Total Hours:</td>
-                                <td>${totalHours.toFixed(1)} hrs</td>
+                            <tr class="totals-row">
+                                <td colspan="4" style="text-align:right;">Total Hours</td>
+                                <td style="text-align:right; font-size:16px;">${totalHours.toFixed(1)}</td>
                             </tr>
                         </tbody>
                     </table>
-        `;
+                </div>
 
-        // Signature section
-        html += `
-                    <div class="signature">
-                        <div>
-                            <p><strong>Intern:</strong> ${fullName}</p>
-                            <p style="margin-top:30px;">Signature: _______________________</p>
-                            <p style="font-size:0.85rem;color:#5d6d7e;">Date: _______________</p>
-                        </div>
-                        <div style="text-align:right;">
-                            <p><strong>Supervisor:</strong> ${user.supervisor || 'N/A'}</p>
-                            <p><strong>Title:</strong> ${user.supervisor_title || 'N/A'}</p>
-                            <p style="margin-top:30px;">Signature: _______________________</p>
-                            <p style="font-size:0.85rem;color:#5d6d7e;">Date: _______________</p>
-                        </div>
+                <!-- Summary Box -->
+                <div class="summary-box">
+                    <div class="stat">
+                        <div class="number">${totalHours.toFixed(1)} hrs</div>
+                        <div class="label">Total Completed</div>
                     </div>
-        `;
+                    <div class="stat">
+                        <div class="number">${targetHours} hrs</div>
+                        <div class="label">Target Hours</div>
+                    </div>
+                    <div class="stat">
+                        <div class="number">${remaining.toFixed(1)} hrs</div>
+                        <div class="label">Remaining</div>
+                    </div>
+                    <div class="stat">
+                        <div class="number">${progress.toFixed(1)}%</div>
+                        <div class="label">Progress</div>
+                    </div>
+                </div>
 
-        html += `
-                    <div class="footer">
-                        This is an official DTR generated from OJT DTR Tracker (Academic Project).
-                        <br>© 2026 OJT DTR Tracker — For Student Use
+                <!-- Signature Section -->
+                <div class="signature">
+                    <div class="block">
+                        <p><strong>Intern</strong></p>
+                        <p>${fullName}</p>
+                        <div class="line"></div>
+                        <div class="line-label">Signature</div>
+                        <div style="margin-top:10px;"><em>Date: _______________</em></div>
                     </div>
-                </body>
-            </html>
+                    <div class="block" style="text-align:right;">
+                        <p><strong>Supervisor</strong></p>
+                        <p>${user.supervisor || 'N/A'}</p>
+                        <div class="line" style="margin-left:auto;"></div>
+                        <div class="line-label">Signature</div>
+                        <div style="margin-top:10px;"><em>Date: _______________</em></div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="footer">
+                    This is an official DTR generated from OJT DTR Tracker (Academic Project).
+                    <br>© 2026 OJT DTR Tracker — For Student Use &nbsp;·&nbsp; 
+                    <a href="#">Privacy Policy</a> &nbsp;·&nbsp; 
+                    <a href="#">Terms of Service</a>
+                    <br><span style="font-size:10px;">Report generated on ${new Date().toLocaleString()}</span>
+                </div>
+            </div>
+        </body>
+        </html>
         `;
 
         res.setHeader('Content-Type', 'text/html');
