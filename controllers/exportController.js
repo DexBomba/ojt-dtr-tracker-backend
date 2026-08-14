@@ -133,7 +133,7 @@ export const exportExcel = async (req, res) => {
     }
 };
 
-// ===== EXPORT PDF =====
+// ===== EXPORT PDF (Professional Header + Larger User Info) =====
 export const exportPDF = async (req, res) => {
     try {
         const shifts = req.body.shifts;
@@ -170,7 +170,7 @@ export const exportPDF = async (req, res) => {
             <html>
             <head>
                 <meta charset="UTF-8">
-                <title>Daily Time Tracker</title>
+                <title>Official Daily Time Record</title>
                 <style>
                     @page {
                         size: A4 portrait;
@@ -196,11 +196,11 @@ export const exportPDF = async (req, res) => {
                         max-width: 100%;
                         margin: 0 auto;
                         background: #fff;
-                        padding: 2px 0 40px; /* bottom space for footer */
+                        padding: 2px 0 40px;
                         box-sizing: border-box;
                     }
                     .content {
-                        /* Takes all space except footer */
+                        /* all content except footer */
                     }
                     /* ===== HEADER ===== */
                     .header {
@@ -210,14 +210,15 @@ export const exportPDF = async (req, res) => {
                         margin-bottom: 10px;
                     }
                     .header h1 {
-                        font-size: 18px;
+                        font-size: 20px;
                         color: #000;
                         margin: 0;
                         letter-spacing: 1px;
                         font-weight: 700;
+                        text-transform: uppercase;
                     }
                     .header .sub {
-                        font-size: 12px;
+                        font-size: 13px;
                         color: #333;
                         margin-top: 2px;
                         font-weight: 600;
@@ -228,7 +229,7 @@ export const exportPDF = async (req, res) => {
                         margin-top: 2px;
                         font-style: italic;
                     }
-                    /* ===== USER INFO ===== */
+                    /* ===== USER INFO – Font size increased to 10px ===== */
                     .info-grid {
                         display: grid;
                         grid-template-columns: 1fr 1fr 1fr;
@@ -237,7 +238,7 @@ export const exportPDF = async (req, res) => {
                         padding: 8px 14px;
                         border: 1px solid #ccc;
                         margin-bottom: 10px;
-                        font-size: 9px;
+                        font-size: 10px; /* was 9px – increased by 1 */
                     }
                     .info-grid .item {
                         display: flex;
@@ -394,12 +395,14 @@ export const exportPDF = async (req, res) => {
             <body>
                 <div class="report">
                     <div class="content">
+                        <!-- ===== PROFESSIONAL HEADER (Option 1) ===== -->
                         <div class="header">
-                            <h1>Daily Time Tracker</h1>
-                            <div class="sub">OJT DTR Report</div>
+                            <h1>Official Daily Time Record</h1>
+                            <div class="sub">On-the-Job Training (OJT) DTR Report</div>
                             <div class="date-range">Period: ${dateRange}</div>
                         </div>
 
+                        <!-- ===== USER INFO ===== -->
                         <div class="info-grid">
                             <div class="item"><span class="label">Intern:</span><span class="value">${fullName}</span></div>
                             <div class="item"><span class="label">Email:</span><span class="value">${user.email || 'N/A'}</span></div>
@@ -409,6 +412,7 @@ export const exportPDF = async (req, res) => {
                             <div class="item"><span class="label">Position:</span><span class="value">${user.position || 'N/A'}</span></div>
                         </div>
 
+                        <!-- ===== TABLE ===== -->
                         <div class="table-wrap">
                             <table>
                                 <thead>
@@ -459,6 +463,7 @@ export const exportPDF = async (req, res) => {
                         </table>
                     </div>
 
+                    <!-- ===== SUMMARY BOX ===== -->
                     <div class="summary-box">
                         <div class="stat">
                             <div class="number">${totalHours.toFixed(1)}</div>
@@ -478,6 +483,7 @@ export const exportPDF = async (req, res) => {
                         </div>
                     </div>
 
+                    <!-- ===== VERIFICATION ===== -->
                     <div class="verification">
                         <div class="title">Verified as to the prescribed office hours:</div>
                         <div class="supervisor-name">${user.supervisor || 'N/A'}</div>
@@ -485,6 +491,7 @@ export const exportPDF = async (req, res) => {
                         <div class="signature-line"></div>
                         <div class="in-charge">In Charge</div>
                     </div>
+
                 </div> <!-- end .content -->
 
                 <!-- ===== FOOTER ===== -->
@@ -501,7 +508,7 @@ export const exportPDF = async (req, res) => {
         `;
 
         res.setHeader('Content-Type', 'text/html');
-        res.setHeader('Content-Disposition', `attachment; filename=Daily_Time_Tracker_${new Date().toISOString().split('T')[0]}.html`);
+        res.setHeader('Content-Disposition', `attachment; filename=Official_Daily_Time_Record_${new Date().toISOString().split('T')[0]}.html`);
         res.send(html);
 
     } catch (error) {
