@@ -3,12 +3,22 @@ import { query } from '../config/db.js';
 
 // Helper function to format time
 function formatTime(timeStr) {
-    if (!timeStr) return '--:--';
+    if (!timeStr) return '--:-- --';
     const [h, m] = timeStr.split(':');
     const hour = parseInt(h);
     const ampm = hour >= 12 ? 'PM' : 'AM';
     const hour12 = hour % 12 || 12;
     return `${hour12}:${m} ${ampm}`;
+}
+
+// Helper to format date
+function formatDate(dateStr) {
+    if (!dateStr) return '--:-- --';
+    const date = new Date(dateStr);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }
 
 // Helper to calculate duration
@@ -24,14 +34,9 @@ function calcDuration(inTime, outTime) {
 // ===== EXPORT CSV =====
 export const exportCSV = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const shifts = req.body.shifts;
 
-        const shifts = await query(
-            'SELECT * FROM shifts WHERE user_id = ? ORDER BY date DESC',
-            [userId]
-        );
-
-        if (shifts.length === 0) {
+        if (!shifts || shifts.length === 0) {
             return res.status(404).json({ message: 'No shifts to export' });
         }
 
@@ -51,12 +56,8 @@ export const exportCSV = async (req, res) => {
             csv += `${total.toFixed(2)}\n`;
         });
 
-        // Get total hours
-        const totalResult = await query(
-            'SELECT COALESCE(SUM(total), 0) as total FROM shifts WHERE user_id = ?',
-            [userId]
-        );
-        const totalHours = parseFloat(totalResult[0].total) || 0;
+        // Get total hours from filtered shifts
+        const totalHours = shifts.reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
 
         csv += `\nSummary,Total Hours: ${totalHours.toFixed(1)}\n`;
 
@@ -73,14 +74,9 @@ export const exportCSV = async (req, res) => {
 // ===== EXPORT EXCEL =====
 export const exportExcel = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const shifts = req.body.shifts;
 
-        const shifts = await query(
-            'SELECT * FROM shifts WHERE user_id = ? ORDER BY date DESC',
-            [userId]
-        );
-
-        if (shifts.length === 0) {
+        if (!shifts || shifts.length === 0) {
             return res.status(404).json({ message: 'No shifts to export' });
         }
 
@@ -122,11 +118,7 @@ export const exportExcel = async (req, res) => {
             </tr>`;
         });
 
-        const totalResult = await query(
-            'SELECT COALESCE(SUM(total), 0) as total FROM shifts WHERE user_id = ?',
-            [userId]
-        );
-        const totalHours = parseFloat(totalResult[0].total) || 0;
+        const totalHours = shifts.reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
 
         html += `<tr><td colspan="10" style="text-align:right;font-weight:bold;">Total Hours:</td><td>${totalHours.toFixed(1)}</td></tr>`;
         html += `</table></body></html>`;
@@ -141,10 +133,15 @@ export const exportExcel = async (req, res) => {
     }
 };
 
-// ===== EXPORT PDF (HTML version for now) =====
+// ===== EXPORT PDF (HTML version for print) =====
 export const exportPDF = async (req, res) => {
     try {
+        const shifts = req.body.shifts;
         const userId = req.user.id;
+
+        if (!shifts || shifts.length === 0) {
+            return res.status(404).json({ message: 'No shifts to export' });
+        }
 
         // Get user info
         const users = await query(
@@ -153,24 +150,10 @@ export const exportPDF = async (req, res) => {
             [userId]
         );
 
-        const shifts = await query(
-            'SELECT * FROM shifts WHERE user_id = ? ORDER BY date DESC',
-            [userId]
-        );
-
-        if (shifts.length === 0) {
-            return res.status(404).json({ message: 'No shifts to export' });
-        }
-
         const user = users[0] || {};
         const fullName = user.full_name || user.name || 'N/A';
 
-        // Get total hours
-        const totalResult = await query(
-            'SELECT COALESCE(SUM(total), 0) as total FROM shifts WHERE user_id = ?',
-            [userId]
-        );
-        const totalHours = parseFloat(totalResult[0].total) || 0;
+        const totalHours = shifts.reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
 
         // Build HTML for PDF
         let html = `
@@ -191,9 +174,6 @@ export const exportPDF = async (req, res) => {
                         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; padding: 20px; background: #fdf6ec; border-radius: 8px; }
                         .info-grid div { padding: 4px 0; }
                         .info-label { font-weight: 600; color: #2c3e50; }
-    `;
-
-        html += `
                     </style>
                 </head>
                 <body>
@@ -246,7 +226,7 @@ export const exportPDF = async (req, res) => {
 
             html += `
                 <tr>
-                    <td>${shift.date}</td>
+                    <td>${formatDate(shift.date)}</td>
                     <td>${morningStr}</td>
                     <td>${afternoonStr}</td>
                     <td>${otStr}</td>
