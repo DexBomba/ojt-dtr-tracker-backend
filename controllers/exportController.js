@@ -133,7 +133,7 @@ export const exportExcel = async (req, res) => {
     }
 };
 
-// ===== EXPORT PDF (Print‑Friendly – No Colors, No Emoji) =====
+// ===== EXPORT PDF =====
 export const exportPDF = async (req, res) => {
     try {
         const shifts = req.body.shifts;
@@ -173,7 +173,7 @@ export const exportPDF = async (req, res) => {
             day: 'numeric' 
         });
 
-        // Build HTML for PDF (Print‑Friendly)
+        // Build HTML for PDF (Professional Layout)
         let html = `
             <!DOCTYPE html>
             <html>
@@ -184,58 +184,63 @@ export const exportPDF = async (req, res) => {
                     /* A4 Page Setup */
                     @page {
                         size: A4 portrait;
-                        margin: 10mm 12mm;
+                        margin: 12mm 14mm;
                     }
-                    /* Reset & Base – Black and White Only */
+                    /* Reset & Base */
                     * { margin: 0; padding: 0; box-sizing: border-box; }
                     body { 
-                        font-family: 'Arial', 'Helvetica', sans-serif;
+                        font-family: 'Times New Roman', 'Georgia', serif;
                         background: #fff;
                         padding: 0;
                         color: #000;
-                        font-size: 9px;
-                        line-height: 1.3;
+                        font-size: 10px;
+                        line-height: 1.4;
                     }
                     .report {
                         max-width: 100%;
                         margin: 0 auto;
                         background: #fff;
-                        padding: 4px 0;
+                        padding: 2px 0;
                     }
-                    /* Header */
+
+                    /* ===== HEADER ===== */
                     .header {
                         text-align: center;
-                        border-bottom: 1.5px solid #000;
-                        padding-bottom: 6px;
-                        margin-bottom: 8px;
+                        border-bottom: 2px solid #000;
+                        padding-bottom: 8px;
+                        margin-bottom: 10px;
                     }
                     .header h1 {
-                        font-size: 16px;
+                        font-size: 18px;
                         color: #000;
                         margin: 0;
-                        letter-spacing: 0.3px;
+                        letter-spacing: 1px;
                         font-weight: 700;
+                        font-family: 'Times New Roman', 'Georgia', serif;
                     }
                     .header .sub {
-                        font-size: 10px;
+                        font-size: 12px;
                         color: #333;
+                        margin-top: 2px;
+                        font-weight: 600;
                     }
                     .header .date-range {
-                        font-size: 9px;
+                        font-size: 10px;
                         color: #555;
+                        margin-top: 2px;
                         font-style: italic;
                     }
-                    /* User Info */
+
+                    /* ===== USER INFO ===== */
                     .info-grid {
                         display: grid;
                         grid-template-columns: 1fr 1fr 1fr;
-                        gap: 2px 12px;
-                        background: #f5f5f5;
-                        padding: 6px 12px;
-                        border-radius: 0px;
-                        margin-bottom: 8px;
-                        border-left: 2px solid #000;
-                        font-size: 8.5px;
+                        gap: 2px 16px;
+                        background: #f7f7f7;
+                        padding: 8px 14px;
+                        border: 1px solid #ccc;
+                        margin-bottom: 10px;
+                        font-size: 9px;
                     }
                     .info-grid .item {
                         display: flex;
@@ -243,21 +248,21 @@ export const exportPDF = async (req, res) => {
                     .info-grid .label {
                         font-weight: 700;
                         color: #000;
-                        min-width: 65px;
+                        min-width: 60px;
                     }
                     .info-grid .value {
                         color: #000;
                     }
-                    /* Table - FIXED WIDTHS & PROFESSIONAL ALIGNMENTS */
+
+                    /* ===== TABLE ===== */
                     .table-wrap {
                         overflow-x: auto;
-                        margin-bottom: 8px;
+                        margin-bottom: 10px;
                     }
                     table {
                         width: 100%;
-                        table-layout: fixed; /* Prevents columns from stretching too wide */
                         border-collapse: collapse;
-                        font-size: 8px;
+                        font-size: 8.5px;
                         border: 1px solid #000;
                     }
                     table thead {
@@ -265,118 +270,134 @@ export const exportPDF = async (req, res) => {
                         color: #fff;
                     }
                     table th {
-                        padding: 4px 3px;
-                        text-align: center; /* Professional header alignment */
-                        font-weight: 600;
-                        letter-spacing: 0.3px;
+                        padding: 4px 6px;
+                        text-align: center;
+                        font-weight: 700;
                         font-size: 7.5px;
                         text-transform: uppercase;
+                        letter-spacing: 0.5px;
                         border: 1px solid #000;
+                        font-family: 'Times New Roman', 'Georgia', serif;
                     }
                     table td {
-                        padding: 3px 4px;
+                        padding: 3px 6px;
                         border: 1px solid #000;
+                        text-align: center;
+                        vertical-align: middle;
+                    }
+                    table td:last-child {
+                        text-align: right;
+                        font-weight: 700;
                     }
                     table tbody tr:nth-child(even) {
-                        background: #f9f9f9;
+                        background: #f7f7f7;
                     }
                     table .totals-row {
                         background: #e8e8e8 !important;
                         font-weight: 700;
-                        border-top: 1.5px solid #000;
                     }
                     table .totals-row td {
-                        padding-top: 4px;
-                        padding-bottom: 4px;
-                        font-size: 9px;
+                        padding-top: 5px;
+                        padding-bottom: 5px;
+                        font-size: 9.5px;
+                        text-align: right;
                     }
-                    /* Summary Box */
+                    table .totals-row td:first-child {
+                        text-align: center;
+                    }
+
+                    /* ===== SUMMARY BOX ===== */
                     .summary-box {
                         display: flex;
                         justify-content: space-around;
-                        background: #f5f5f5;
+                        background: #f7f7f7;
                         padding: 6px 12px;
-                        border-radius: 0px;
-                        margin: 6px 0 12px;
                         border: 1px solid #000;
+                        margin: 8px 0 12px;
                     }
                     .summary-box .stat {
                         text-align: center;
                     }
                     .summary-box .stat .number {
-                        font-size: 14px;
+                        font-size: 15px;
                         font-weight: 700;
                         color: #000;
+                        font-family: 'Times New Roman', 'Georgia', serif;
                     }
                     .summary-box .stat .label {
                         font-size: 8px;
                         color: #333;
                         text-transform: uppercase;
-                        letter-spacing: 0.2px;
+                        letter-spacing: 0.5px;
                     }
-                    /* Verification - Fixed Signature Spacing */
+
+                    /* ===== VERIFICATION ===== */
                     .verification {
                         text-align: center;
-                        margin-top: 14px;
-                        padding-top: 10px;
-                        border-top: 1.5px dashed #000;
+                        margin-top: 16px;
+                        padding-top: 12px;
+                        border-top: 2px dashed #000;
                     }
                     .verification .title {
-                        font-size: 10px;
-                        font-weight: 600;
-                        color: #000;
-                        letter-spacing: 0.5px;
-                        text-transform: uppercase;
-                    }
-                    .verification .signature-line {
-                        width: 40%;
-                        max-width: 250px;
-                        margin: 8px auto 2px;
-                        border-bottom: 1px solid #000;
-                    }
-                    .verification .signature-label {
-                        font-size: 8px;
-                        color: #555;
-                        margin-bottom: 4px;
-                        display: block;
-                    }
-                    .verification .supervisor-name {
-                        font-size: 13px;
+                        font-size: 11px;
                         font-weight: 700;
                         color: #000;
-                        margin-top: 2px;
-                        letter-spacing: 0.3px;
+                        text-transform: uppercase;
+                        letter-spacing: 1px;
+                        font-family: 'Times New Roman', 'Georgia', serif;
+                    }
+                    .verification .supervisor-name {
+                        font-size: 14px;
+                        font-weight: 700;
+                        color: #000;
+                        margin-top: 10px;
+                        font-family: 'Times New Roman', 'Georgia', serif;
                     }
                     .verification .supervisor-title {
-                        font-size: 10px;
+                        font-size: 11px;
                         color: #333;
-                        margin-top: 1px;
+                        margin-top: 2px;
+                    }
+                    .verification .signature-line {
+                        width: 50%;
+                        max-width: 280px;
+                        margin: 6px auto 0;
+                        border-bottom: 1.5px solid #000;
                     }
                     .verification .in-charge {
-                        font-size: 9px;
+                        font-size: 10px;
                         color: #333;
                         margin-top: 2px;
                         text-transform: uppercase;
-                        letter-spacing: 0.5px;
+                        letter-spacing: 1px;
                     }
-                    /* Footer */
+
+                    /* ===== FOOTER ===== */
                     .footer {
                         text-align: center;
-                        font-size: 8px;
+                        font-size: 8.5px;
                         color: #333;
-                        margin-top: 12px;
-                        padding-top: 8px;
+                        margin-top: 14px;
+                        padding-top: 10px;
                         border-top: 1px solid #ccc;
-                        line-height: 1.5;
+                        line-height: 1.6;
+                        font-family: 'Times New Roman', 'Georgia', serif;
                     }
                     .footer .dev {
-                        font-weight: 600;
+                        font-weight: 700;
                         color: #000;
                     }
                     .footer .approved {
-                        font-weight: 600;
+                        font-weight: 700;
                         color: #000;
                     }
+                    .footer .copyright {
+                        font-size: 7.5px;
+                        color: #777;
+                        margin-top: 2px;
+                    }
+
+                    /* ===== PRINT ===== */
                     @media print {
                         body { padding: 0; }
                         .report { border: none; box-shadow: none; }
@@ -387,12 +408,15 @@ export const exportPDF = async (req, res) => {
             </head>
             <body>
                 <div class="report">
+
+                    <!-- ===== HEADER ===== -->
                     <div class="header">
                         <h1>Daily Time Tracker</h1>
                         <div class="sub">OJT DTR Report</div>
                         <div class="date-range">Period: ${dateRange}</div>
                     </div>
 
+                    <!-- ===== USER INFO ===== -->
                     <div class="info-grid">
                         <div class="item"><span class="label">Intern:</span><span class="value">${fullName}</span></div>
                         <div class="item"><span class="label">Email:</span><span class="value">${user.email || 'N/A'}</span></div>
@@ -402,23 +426,16 @@ export const exportPDF = async (req, res) => {
                         <div class="item"><span class="label">Position:</span><span class="value">${user.position || 'N/A'}</span></div>
                     </div>
 
+                    <!-- ===== TABLE ===== -->
                     <div class="table-wrap">
                         <table>
-                            <!-- PRECISE COLUMN WIDTH DEFINITIONS -->
-                            <colgroup>
-                                <col style="width: 12%;"> <!-- Date -->
-                                <col style="width: 28%;"> <!-- Morning -->
-                                <col style="width: 28%;"> <!-- Afternoon -->
-                                <col style="width: 20%;"> <!-- Overtime -->
-                                <col style="width: 12%;"> <!-- Total -->
-                            </colgroup>
                             <thead>
                                 <tr>
-                                    <th>Date</th>
-                                    <th>Morning</th>
-                                    <th>Afternoon</th>
-                                    <th>Overtime</th>
-                                    <th>Total</th>
+                                    <th style="width:11%;">Date</th>
+                                    <th style="width:28%;">Morning</th>
+                                    <th style="width:28%;">Afternoon</th>
+                                    <th style="width:18%;">Overtime</th>
+                                    <th style="width:15%;">Total (hrs)</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -431,47 +448,47 @@ export const exportPDF = async (req, res) => {
             const total = parseFloat(shift.total) || 0;
 
             const morningStr = shift.morning_in && shift.morning_out ?
-                `${formatTime(shift.morning_in)} - ${formatTime(shift.morning_out)} (${mDur.toFixed(1)}h)` :
+                `${formatTime(shift.morning_in)} – ${formatTime(shift.morning_out)} (${mDur.toFixed(1)})` :
                 '—';
             const afternoonStr = shift.afternoon_in && shift.afternoon_out ?
-                `${formatTime(shift.afternoon_in)} - ${formatTime(shift.afternoon_out)} (${aDur.toFixed(1)}h)` :
+                `${formatTime(shift.afternoon_in)} – ${formatTime(shift.afternoon_out)} (${aDur.toFixed(1)})` :
                 '—';
             const otStr = shift.overtime_in && shift.overtime_out ?
-                `${formatTime(shift.overtime_in)} - ${formatTime(shift.overtime_out)} (${oDur.toFixed(1)}h)` :
+                `${formatTime(shift.overtime_in)} – ${formatTime(shift.overtime_out)} (${oDur.toFixed(1)})` :
                 '—';
 
             html += `
                 <tr>
-                    <td style="text-align:center;">${formatDate(shift.date)}</td>
-                    <td style="text-align:center;">${morningStr}</td>
-                    <td style="text-align:center;">${afternoonStr}</td>
-                    <td style="text-align:center;">${otStr}</td>
-                    <td style="text-align:right; font-weight:600;">${total.toFixed(1)}</td>
+                    <td>${formatDate(shift.date)}</td>
+                    <td>${morningStr}</td>
+                    <td>${afternoonStr}</td>
+                    <td>${otStr}</td>
+                    <td>${total.toFixed(1)}</td>
                 </tr>
             `;
         });
 
         html += `
                             <tr class="totals-row">
-                                <td colspan="4" style="text-align:right;">Total Hours</td>
-                                <td style="text-align:right; font-size:11px;">${totalHours.toFixed(1)}</td>
+                                <td colspan="4"><strong>TOTAL HOURS</strong></td>
+                                <td><strong>${totalHours.toFixed(1)}</strong></td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
 
-                <!-- Summary Box -->
+                <!-- ===== SUMMARY BOX ===== -->
                 <div class="summary-box">
                     <div class="stat">
-                        <div class="number">${totalHours.toFixed(1)}h</div>
+                        <div class="number">${totalHours.toFixed(1)}</div>
                         <div class="label">Completed</div>
                     </div>
                     <div class="stat">
-                        <div class="number">${targetHours}h</div>
+                        <div class="number">${targetHours}</div>
                         <div class="label">Target</div>
                     </div>
                     <div class="stat">
-                        <div class="number">${remaining.toFixed(1)}h</div>
+                        <div class="number">${remaining.toFixed(1)}</div>
                         <div class="label">Remaining</div>
                     </div>
                     <div class="stat">
@@ -480,24 +497,24 @@ export const exportPDF = async (req, res) => {
                     </div>
                 </div>
 
-                <!-- Verification (Signature space moved ABOVE the name) -->
+                <!-- ===== VERIFICATION ===== -->
                 <div class="verification">
                     <div class="title">Verified as to the prescribed office hours:</div>
-                    <div class="signature-line"></div>
-                    <span class="signature-label">Signature over printed name</span>
                     <div class="supervisor-name">${user.supervisor || 'N/A'}</div>
                     <div class="supervisor-title">${user.supervisor_title || 'N/A'}</div>
+                    <div class="signature-line"></div>
                     <div class="in-charge">In Charge</div>
                 </div>
 
-                <!-- Footer -->
+                <!-- ===== YOUR EXACT FOOTER ===== -->
                 <div class="footer">
                     <p>This is an official DTR generated from OJT DTR Tracker (Intern Project)</p>
                     <p><span class="dev">Developed by John Dexter Obut - Intern</span></p>
                     <p><span class="approved">Approved by Enrico Emil Dela Rosa - Software Engineer</span></p>
-                    <p style="font-size:7px; color:#777;">© 2026 OJT DTR Tracker (For Student Intern Use)</p>
-                    <p style="font-size:7px; color:#777;">Report generated on ${currentDate}</p>
+                    <p class="copyright">© 2026 OJT DTR Tracker (For Student Intern Use)</p>
+                    <p class="copyright">Report generated on ${currentDate}</p>
                 </div>
+
             </div>
         </body>
         </html>
